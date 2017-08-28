@@ -25,29 +25,36 @@ seen_credits = set()
 db = sql.connect(':memory:')
 
 def create_tables():
-    db.execute('CREATE TABLE movies(text VARCHAR(255)), year INTEGER)')
+    db.execute('CREATE TABLE movies(text VARCHAR(255), year INTEGER)')
     db.execute('CREATE TABLE people(text VARCHAR(255), year INTEGER)')
 
-def check_if_movie_exists(movie_id):
-    db.execute(...)
-
-def save_movie(json):
+def insert_people_ids(json):
     list_of_keys = [''] #Add keys that you think are important for analysis
     row = [json.get(key) for key in list_of_keys]
-    db.execute('INSERT INTO movies VALUES (?, ?, ?)', row)
+    db.execute('INSERT INTO people VALUES (?, ?, ?)', row)
 
-def save_person(json):
+def insert_movie_data(json):
+    list_of_keys = ['id','budget','release_date','production_companies','revenue','runtime','title'] #Add keys that you think are important for analysis
+    row = [json.get(key) for key in list_of_keys]
+    db.execute('INSERT INTO movies VALUES (?, ?, ?, ?, ?, ?, ?)', row)
 
-def save_movie_credits(json):
+    row = [json.get(list_of_keys[0])
+    row.append([x.get('name') for x in json.get('genres')])
+    db.execute('INSERT INTO genres VALUES (?, ?)', row)
+
+def insert_movie_ids(json):
+    list_of_keys = [''] #Add keys that you think are important for analysis
+    row = [json.get(key) for key in list_of_keys]
+    db.execute('INSERT INTO people VALUES (?, ?, ?)', row)
 
 def save_people_credits(json):
 
 
 
 def check_if_movie_exists(movie_id):
-        select_movie = db.execute('SELECT COUNT(*) FROM movie_table WHERE movie_id=?', movie_id)
-        count_of_movies = select_movie.fetchone()
-        return count_of_movies > 0
+        # select_movie = db.execute('SELECT COUNT(*) FROM movie_table WHERE movie_id=?', movie_id)
+        # count_of_movies = select_movie.fetchone()
+        # return count_of_movies > 0
 
 
 def get_movie(movie_id):
@@ -60,45 +67,33 @@ def get_movie(movie_id):
     json = resp.json()
 
     # Save data
-    insert_movie(json)
+    insert_movie_data(json)
 
     resp = requests.get(BASE_URL + f'movie/{movie_id}/credits')
     json = resp.json()
 
-    save_movie_credits(json)
+    # Save credits including the order
+    insert_people_ids(json)
 
     # Mark as seen
     seen_movies.add(movie_id)
 
 
-
-def get_credits(credit_id):
-    if check_if_credit_exists(credit_id):
-        return
-
-    resp = requests.get(BASE_URL + f'credits/{credit_id}')
-    json = resp.json()
-
-    save_credits(json)
-
-    seen_credits.add(credit_id)
-
 def get_person(person_id):
     if check_if_person_exists(person_id):
         return
 
-    resp = requests.get(BASE_URL + f'person/{person_id}')
-    json = resp.json()
+    # resp = requests.get(BASE_URL + f'person/{person_id}')
+    # json = resp.json()
 
-    save_person(json)
+    # save_person(json)
 
     resp = requests.get(BASE_URL + f'person/{person_id}/movie_credits')
     json = resp.json()
 
-    save_people_credits(json)
+    insert_movie_ids(json)
 
     seen_people.add(person_id)
-
 
 
 # DB M1 M2
@@ -106,7 +101,7 @@ def get_person(person_id):
 # [P5 P9]
 # DB P1 P2 P3
 
-while len(db) < 1000:
+while len(db) < 10000:
     while len(movie_list) > 0:
         movie_id = movie_list.pop()
         get_movie(movie_id)
