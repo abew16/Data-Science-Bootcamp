@@ -3,8 +3,7 @@ import requests
 
 BASE_URL = 'https://api.themoviedb.org/3/'
 api_key_3 = '934559315e2d3148d261fe2f126755db'
-api_key_4 = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5MzQ1NTkzMTVlMmQzMTQ4ZDI2MWZlMmYxMjY3NTVkYiIsInN1YiI6IjU5OTEwYmQ4YzNhMzY4MDZjMzAwMjQ2OSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.wFXnI4QLQckkcpYad3si4_VCqsd-ztu3pUMdrq0-K1M
-'
+api_key_4 = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5MzQ1NTkzMTVlMmQzMTQ4ZDI2MWZlMmYxMjY3NTVkYiIsInN1YiI6IjU5OTEwYmQ4YzNhMzY4MDZjMzAwMjQ2OSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.wFXnI4QLQckkcpYad3si4_VCqsd-ztu3pUMdrq0-K1M'
 
 """
 For movies, credits, and people
@@ -24,41 +23,48 @@ seen_credits = set()
 
 db = sql.connect(':memory:')
 
+
 def create_tables():
     db.execute('CREATE TABLE movies(text VARCHAR(255), year INTEGER)')
     db.execute('CREATE TABLE people(text VARCHAR(255), year INTEGER)')
 
+
 def insert_people_ids(json):
-    list_of_keys = [''] #Add keys that you think are important for analysis
+    list_of_keys = ['']  # Add keys that you think are important for analysis
     row = [json.get(key) for key in list_of_keys]
     db.execute('INSERT INTO people VALUES (?, ?, ?)', row)
 
+
 def insert_movie_data(json):
-    list_of_keys = ['id','budget','release_date','production_companies','revenue','runtime','title'] #Add keys that you think are important for analysis
+    list_of_keys = ['id', 'budget', 'release_date', 'production_companies', 'revenue', 'runtime',
+                    'title']  # Add keys that you think are important for analysis
     row = [json.get(key) for key in list_of_keys]
     db.execute('INSERT INTO movies VALUES (?, ?, ?, ?, ?, ?, ?)', row)
 
-    row = [json.get(list_of_keys[0])
+    row = [json.get(list_of_keys[0])]
     row.append([x.get('name') for x in json.get('genres')])
     db.execute('INSERT INTO genres VALUES (?, ?)', row)
 
+
 def insert_movie_ids(json):
-    list_of_keys = [''] #Add keys that you think are important for analysis
+    list_of_keys = ['']  # Add keys that you think are important for analysis
     row = [json.get(key) for key in list_of_keys]
     db.execute('INSERT INTO people VALUES (?, ?, ?)', row)
 
-def save_people_credits(json):
 
+def save_people_credits(json):
+    return
 
 
 def check_if_movie_exists(movie_id):
-        # select_movie = db.execute('SELECT COUNT(*) FROM movie_table WHERE movie_id=?', movie_id)
-        # count_of_movies = select_movie.fetchone()
-        # return count_of_movies > 0
+    # select_movie = db.execute('SELECT COUNT(*) FROM movie_table WHERE movie_id=?', movie_id)
+    # count_of_movies = select_movie.fetchone()
+    # return count_of_movies > 0
+    return
 
 
 def get_movie(movie_id):
-    #if movie_id in seen_movies:
+    # if movie_id in seen_movies:
     if check_if_movie_exists(movie_id):
         return
 
@@ -110,13 +116,16 @@ while len(db) < 10000:
         person_id = person_list.pop()
         get_person(person_id)
 
+
 def fib(n):
-    return fib(n-1) + fib(n-2)
+    return fib(n - 1) + fib(n - 2)
+
 
 def fib(n):
     a, b = 0, 1
     for _ in range(n):
-        a, b = b, a+b
+        a, b = b, a + b
     return b
+
 
 fib(30)
