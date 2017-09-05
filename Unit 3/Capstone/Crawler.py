@@ -2,8 +2,8 @@ import sqlite3 as sql
 import requests
 
 BASE_URL = 'https://api.themoviedb.org/3/'
-api_key_3 = '934559315e2d3148d261fe2f126755db'
-api_key_4 = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5MzQ1NTkzMTVlMmQzMTQ4ZDI2MWZlMmYxMjY3NTVkYiIsInN1YiI6IjU5OTEwYmQ4YzNhMzY4MDZjMzAwMjQ2OSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.wFXnI4QLQckkcpYad3si4_VCqsd-ztu3pUMdrq0-K1M'
+API_KEY_3 = '934559315e2d3148d261fe2f126755db'
+API_KEY_4 = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI5MzQ1NTkzMTVlMmQzMTQ4ZDI2MWZlMmYxMjY3NTVkYiIsInN1YiI6IjU5OTEwYmQ4YzNhMzY4MDZjMzAwMjQ2OSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.wFXnI4QLQckkcpYad3si4_VCqsd-ztu3pUMdrq0-K1M'
 
 """
 For movies, credits, and people
@@ -20,34 +20,54 @@ For movies, credits, and people
 seen_movies = set()
 seen_people = set()
 seen_credits = set()
+unseen_people_id = []
+unseen_movie_id = []
 
 db = sql.connect(':memory:')
 
 
 def create_tables():
-    db.execute('CREATE TABLE movies(text VARCHAR(255), year INTEGER)')
-    db.execute('CREATE TABLE people(text VARCHAR(255), year INTEGER)')
+    db.execute('CREATE TABLE movies(movie_id integer,'
+               '                    budget integer,'
+               '                    release_date text, '
+               '                    production_companies text,'
+               '                    revenue integer,'
+               '                    runtime integer,'
+               '                    title text)')
+    db.execute('CREATE TABLE genres(movie_id text,'
+               '                    genre_name text)')
+    db.execute('CREATE TABLE production_companies(movie_id text,'
+               '                                  company_name text)')
+    db.execute('CREATE TABLE people(movie_id integer,'
+               '                    name text,'
+               '                    gender integer,'
+               '                    order integer)')
 
 
-def insert_people_ids(json):
+def insert_people_data(json):
     list_of_keys = ['']  # Add keys that you think are important for analysis
     row = [json.get(key) for key in list_of_keys]
-    db.execute('INSERT INTO people VALUES (?, ?, ?)', row)
+    db.execute('INSERT INTO people VALUES (?, ?, ?, ?)', row)
 
 
 def insert_movie_data(json):
-    list_of_keys = ['id', 'budget', 'release_date', 'production_companies', 'revenue', 'runtime',
-                    'title']  # Add keys that you think are important for analysis
+    # Insert flat movie data into movies table
+    list_of_keys = ['move_id', 'budget', 'release_date', 'revenue', 'runtime', 'title']
     row = [json.get(key) for key in list_of_keys]
-    db.execute('INSERT INTO movies VALUES (?, ?, ?, ?, ?, ?, ?)', row)
+    db.execute('INSERT INTO movies VALUES (?, ?, ?, ?, ?, ?)', row)
 
+    # Insert nested genre data into genre table
     row = [json.get(list_of_keys[0])]
     row.append([x.get('name') for x in json.get('genres')])
     db.execute('INSERT INTO genres VALUES (?, ?)', row)
 
+    # Insert nested production company data into production_companies table
+    row = [json.get(list_of_keys[0])]
+    row.append([x.get('name') for x in json.get('production_companies')])
+    db.execute('INSERT INTO genres VALUES (?, ?)', row)
 
 def insert_movie_ids(json):
-    list_of_keys = ['']  # Add keys that you think are important for analysis
+    list_of_keys = ['id']  # Add keys that you think are important for analysis
     row = [json.get(key) for key in list_of_keys]
     db.execute('INSERT INTO people VALUES (?, ?, ?)', row)
 
@@ -57,14 +77,11 @@ def save_people_credits(json):
 
 
 def check_if_movie_exists(movie_id):
-    # select_movie = db.execute('SELECT COUNT(*) FROM movie_table WHERE movie_id=?', movie_id)
-    # count_of_movies = select_movie.fetchone()
-    # return count_of_movies > 0
-    return
+    movie_id in seen_movies
+    return True
 
 
 def get_movie(movie_id):
-    # if movie_id in seen_movies:
     if check_if_movie_exists(movie_id):
         return
 
@@ -78,21 +95,21 @@ def get_movie(movie_id):
     resp = requests.get(BASE_URL + f'movie/{movie_id}/credits')
     json = resp.json()
 
-    # Save credits including the order
-    insert_people_ids(json)
+    # Save the cast of the movie
+    insert_people_data(json)
 
     # Mark as seen
     seen_movies.add(movie_id)
 
 
+def check_if_person_exists(person_id):
+    person_id in seen_people
+    return True
+
+
 def get_person(person_id):
     if check_if_person_exists(person_id):
         return
-
-    # resp = requests.get(BASE_URL + f'person/{person_id}')
-    # json = resp.json()
-
-    # save_person(json)
 
     resp = requests.get(BASE_URL + f'person/{person_id}/movie_credits')
     json = resp.json()
@@ -116,16 +133,3 @@ while len(db) < 10000:
         person_id = person_list.pop()
         get_person(person_id)
 
-
-def fib(n):
-    return fib(n - 1) + fib(n - 2)
-
-
-def fib(n):
-    a, b = 0, 1
-    for _ in range(n):
-        a, b = b, a + b
-    return b
-
-
-fib(30)
