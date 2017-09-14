@@ -1,5 +1,9 @@
 import sqlite3 as sql
 import requests
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 BASE_URL = 'https://api.themoviedb.org/3/'
 API_KEY_3 = '934559315e2d3148d261fe2f126755db'
@@ -23,10 +27,11 @@ seen_people = set()
 unseen_people_ids = set()
 unseen_movie_ids = {819}
 
-db = sql.connect(':memory:')
+db = sql.connect(r'..\..\..\Data Science Data\Unit 3\db.sqlite')
 
 
 def create_tables():
+    logger.info('Creating Tables')
     db.execute('CREATE TABLE IF NOT EXISTS movies(movie_id integer,'
                '                    budget integer,'
                '                    release_date text, '
@@ -42,12 +47,14 @@ def create_tables():
                '                    gender integer,'
                '                    cast_order integer)')
     db.execute('CREATE TABLE IF NOT EXISTS crew(movie_id integer,'
+               '                    crew_member_id integer,'
                '                    name text,'
                '                    gender integer,'
                '                    job text)')
 
 
 def insert_cast_data(json, movie_id):
+    logger.info('Insert Cast Data for Movie %d', movie_id)
     list_of_keys = ['name', 'gender','order']  # Add keys that you think are important for analysis
     cast = json.get('cast')
     for cast_member in cast:
@@ -58,31 +65,41 @@ def insert_cast_data(json, movie_id):
 
 
 def insert_crew_data(json, movie_id):
-    list_of_keys = ['movie_id', 'name', 'gender','job']  # Add keys that you think are important for analysis
+    logger.info('Insert Crew Data for Movie %d', movie_id)
+    list_of_keys = ['id','name', 'gender','job']  # Add keys that you think are important for analysis
     crew = json.get('crew')
     for crew_member in crew:
         row = [crew_member.get(key) for key in list_of_keys]
         row.insert(0, movie_id)
-        db.execute('INSERT INTO crew VALUES (?, ?, ?, ?)', row)
+        db.execute('INSERT INTO crew VALUES (?, ?, ?, ?, ?)', row)
 
 
 def insert_movie_data(json):
+    movie_id = json['id']
+    logger.info('Insert Movie Data for Movie %d', movie_id)
     # Insert flat movie data into movies table
-    list_of_keys = ['move_id', 'budget', 'release_date', 'revenue', 'runtime', 'title']
+    list_of_keys = ['id', 'budget', 'release_date', 'revenue', 'runtime', 'title']
     row = [json.get(key) for key in list_of_keys]
     db.execute('INSERT INTO movies VALUES (?, ?, ?, ?, ?, ?)', row)
 
     # Insert nested genre data into genre table
-    row = [json.get(list_of_keys[0])]
-    row.append([x.get('name') for x in json.get('genres')])
-    db.execute('INSERT INTO genres VALUES (?, ?)', row)
+    genres = json['genres']
+    production_companies = json.get('production_companies')
 
-    # Insert nested production company data into production_companies table
-    row = [json.get(list_of_keys[0])]
-    row.append([x.get('name') for x in json.get('production_companies')])
-    db.execute('INSERT INTO genres VALUES (?, ?)', row)
+    for genre_list in genres:
+        genre = genre_list.get('name')
+        row = [movie_id, genre]
+        db.execute('INSERT INTO genres VALUES (?, ?)', row)
+
+    for company_list in production_companies:
+        company = company_list.get('name')
+        row = [movie_id, company]
+        db.execute('INSERT INTO production_companies VALUES (?, ?)', row)
+
 
 def insert_movie_ids(json):
+    person_id = json['id']
+    logger.info('Insert Movie IDs from person %d', person_id)
     cast = json['cast']
     for movie in cast:
         unseen_movie_ids.add(movie['id'])
@@ -92,6 +109,7 @@ def check_if_movie_exists(movie_id):
 
 
 def get_movie_data(movie_id):
+    logger.info('Fetching Movie Data for %d', movie_id)
     if check_if_movie_exists(movie_id):
         return
 
@@ -119,6 +137,7 @@ def check_if_person_exists(person_id):
 
 
 def get_movie_ids_from_person(person_id):
+    logger.info('Fetching Movie IDs for person id %d', person_id)
     if check_if_person_exists(person_id):
         return
 
@@ -143,11 +162,15 @@ while len(seen_movies) < 2:
     while len(unseen_movie_ids) > 0:
         movie_id = unseen_movie_ids.pop()
         get_movie_data(movie_id)
+        db.commit()
 
     while len(unseen_people_ids) > 0:
         person_id = unseen_people_ids.pop()
         get_movie_ids_from_person(person_id)
-
-    db.commit()
+        db.commit()
 
 db.close()
+
+# Adjust check if movie exists functions so it checks against the db
+# SQLite create index
+# Add code so you can pick up where you left off. Add unseen movies to db or write to file
