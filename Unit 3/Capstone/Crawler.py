@@ -61,8 +61,9 @@ def insert_cast_data(json, movie_id):
         row = [cast_member.get(key) for key in list_of_keys]
         row.insert(0, movie_id)
         db.execute('INSERT INTO cast VALUES (?, ?, ?, ?)', row)
-        unseen_people_ids.add(cast_member['id'])
-
+        # unseen_people_ids.add(cast_member['id'])
+        with open(r'..\..\..\Data Science Data\Unit 3\unseen_people.txt') as f:
+            f.write(cast_member['id'])
 
 def insert_crew_data(json, movie_id):
     logger.info('Insert Crew Data for Movie %d', movie_id)
@@ -102,10 +103,16 @@ def insert_movie_ids(json):
     logger.info('Insert Movie IDs from person %d', person_id)
     cast = json['cast']
     for movie in cast:
-        unseen_movie_ids.add(movie['id'])
+        # unseen_movie_ids.add(movie['id'])
+        with open(r'..\..\..\Data Science Data\Unit 3\unseen_movies.txt') as f:
+            f.write(movie)
+
 
 def check_if_movie_exists(movie_id):
     return movie_id in seen_movies
+
+def check_if_person_exists(person_id):
+    return person_id in seen_people
 
 
 def get_movie_data(movie_id):
@@ -129,11 +136,6 @@ def get_movie_data(movie_id):
 
     # Mark as seen
     seen_movies.add(movie_id)
-
-
-def check_if_person_exists(person_id):
-    return person_id in seen_people
-
 
 
 def get_movie_ids_from_person(person_id):
