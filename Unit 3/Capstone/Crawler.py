@@ -1,6 +1,7 @@
 import sqlite3 as sql
 import requests
 import logging
+import atexit
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,10 +25,20 @@ For movies, credits, and people
 
 seen_movies = set()
 seen_people = set()
-unseen_people_ids = set()
-unseen_movie_ids = {819}
+
+with open(r'..\..\..\Data Science Data\Unit 3\unseen_movies.txt','r') as f:
+    unseen_movie_ids = set(map(int,f.readlines()))
+
+with open(r'..\..\..\Data Science Data\Unit 3\unseen_people.txt', 'r') as f:
+    unseen_people_ids = set(map(int, f.readlines()))
+
+unseen_movie_file = open(r'..\..\..\Data Science Data\Unit 3\unseen_movies.txt','w')
+unseen_people_file = open(r'..\..\..\Data Science Data\Unit 3\unseen_people.txt','w')
+atexit.register(unseen_movie_file.close)
+atexit.register(unseen_people_file.close)
 
 db = sql.connect(r'..\..\..\Data Science Data\Unit 3\db.sqlite')
+atexit.register(db.close)
 
 
 def create_tables():
@@ -61,7 +72,7 @@ def insert_cast_data(json, movie_id):
         row = [cast_member.get(key) for key in list_of_keys]
         row.insert(0, movie_id)
         db.execute('INSERT INTO cast VALUES (?, ?, ?, ?)', row)
-        # unseen_people_ids.add(cast_member['id'])
+        unseen_people_ids.add(cast_member['id'])
         with open(r'..\..\..\Data Science Data\Unit 3\unseen_people.txt') as f:
             f.write(cast_member['id'])
 
@@ -103,9 +114,9 @@ def insert_movie_ids(json):
     logger.info('Insert Movie IDs from person %d', person_id)
     cast = json['cast']
     for movie in cast:
-        # unseen_movie_ids.add(movie['id'])
-        with open(r'..\..\..\Data Science Data\Unit 3\unseen_movies.txt') as f:
-            f.write(movie)
+        if movie['id'] not in unseen_movie_ids:
+            unseen_movie_ids.add(movie['id'])
+            f.write('{}\n'.format(movie['id']))
 
 
 def check_if_movie_exists(movie_id):
@@ -170,8 +181,6 @@ while len(seen_movies) < 2:
         person_id = unseen_people_ids.pop()
         get_movie_ids_from_person(person_id)
         db.commit()
-
-db.close()
 
 # Adjust check if movie exists functions so it checks against the db
 # SQLite create index
