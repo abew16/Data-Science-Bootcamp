@@ -38,6 +38,7 @@ atexit.register(unseen_movie_file.close)
 atexit.register(unseen_people_file.close)
 
 db = sql.connect(r'..\..\..\Data Science Data\Unit 3\db.sqlite')
+c = db.cursor()
 atexit.register(db.close)
 
 
@@ -49,29 +50,36 @@ def create_tables():
                '                    revenue integer,'
                '                    runtime integer,'
                '                    title text)')
+    db.execute('CREATE UNIQUE INDEX IF NOT EXISTS movie_id_index ON movies(movie_id)')
     db.execute('CREATE TABLE IF NOT EXISTS genres(movie_id text,'
                '                    genre_name text)')
+    db.execute('CREATE UNIQUE INDEX IF NOT EXISTS movie_id_index ON genres(movie_id)')
     db.execute('CREATE TABLE IF NOT EXISTS production_companies(movie_id text,'
                '                                  company_name text)')
+    db.execute('CREATE UNIQUE INDEX IF NOT EXISTS movie_id_index ON production_companies(movie_id)')
     db.execute('CREATE TABLE IF NOT EXISTS cast(movie_id integer,'
+               '                    cast_member_id integer'
                '                    name text,'
                '                    gender integer,'
                '                    cast_order integer)')
+    db.execute('CREATE UNIQUE INDEX IF NOT EXISTS movie_id_index ON cast(movie_id)')
     db.execute('CREATE TABLE IF NOT EXISTS crew(movie_id integer,'
                '                    crew_member_id integer,'
                '                    name text,'
                '                    gender integer,'
                '                    job text)')
+    db.execute('CREATE UNIQUE INDEX IF NOT EXISTS movie_id_index ON crew(movie_id)')
+
 
 
 def insert_cast_data(json, movie_id):
     logger.info('Insert Cast Data for Movie %d', movie_id)
-    list_of_keys = ['name', 'gender','order']  # Add keys that you think are important for analysis
+    list_of_keys = ['id', 'name', 'gender','order']  # Add keys that you think are important for analysis
     cast = json.get('cast')
     for cast_member in cast:
         row = [cast_member.get(key) for key in list_of_keys]
         row.insert(0, movie_id)
-        db.execute('INSERT INTO cast VALUES (?, ?, ?, ?)', row)
+        db.execute('INSERT INTO cast VALUES (?, ?, ?, ?, ?)', row)
         unseen_people_ids.add(cast_member['id'])
         with open(r'..\..\..\Data Science Data\Unit 3\unseen_people.txt') as f:
             f.write(cast_member['id'])
@@ -120,10 +128,14 @@ def insert_movie_ids(json):
 
 
 def check_if_movie_exists(movie_id):
-    return movie_id in seen_movies
+    # return movie_id in seen_movies
+    data = db.execute('SELECT COUNT(movie_id) FROM movies WHERE movie_id = (?)', movie_id)
+    return list(data)[0] > 0
 
 def check_if_person_exists(person_id):
-    return person_id in seen_people
+    # return person_id in seen_people
+    data = db.execute('SELECT COUNT(cast_member_id) FROM cast WHERE cast_member_id = (?)', person_id)
+    return list(data)[0] > 0
 
 
 def get_movie_data(movie_id):
@@ -183,5 +195,5 @@ while len(seen_movies) < 2:
         db.commit()
 
 # Adjust check if movie exists functions so it checks against the db
-# SQLite create index
-# Add code so you can pick up where you left off. Add unseen movies to db or write to file
+# SQLite create index - DONE
+# Add code so you can pick up where you left off. Add unseen movies to db or write to file - CREATE FILES TO TIE OFF
