@@ -3,6 +3,10 @@ from contextlib import suppress
 import atexit
 import requests
 import json
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 BASE_URL = 'https://api.themoviedb.org/3/'
 
@@ -25,20 +29,28 @@ def insert_db_columns():
 def get_imdb_movie_id(tmdb_movie_id):
     resp = requests.get(BASE_URL + f'movie/{tmdb_movie_id}', params=payload)
     movie_data = resp.json()
-    return movie_data['imdb_id']
+    try:
+        return movie_data['imdb_id']
+    except KeyError:
+        return 'Null'
 
 
 def get_imdb_person_id(tmdb_person_id):
     resp = requests.get(BASE_URL + f'person/{tmdb_person_id}', params=payload)
     person_data = resp.json()
-    return person_data['imdb_id']
+    try:
+        return person_data['imdb_id']
+    except KeyError:
+        return 'Null'
 
 
 def update_imdb_movie_id(imdb_id, tmdb_movie_id):
+    logger.info('Adding IMDB movie ID for %d', tmdb_movie_id)
     db.execute('UPDATE movies SET imdb_id = ? WHERE movie_id = ?', (imdb_id, tmdb_movie_id))
 
 
 def update_imdb_person_id(imdb_id, tmdb_person_id):
+    logger.info('Adding IMDB person ID for %d', tmdb_person_id)
     db.execute('UPDATE cast SET imdb_id = ? WHERE cast_member_id = ?', (imdb_id, tmdb_person_id))
 
 
