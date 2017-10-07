@@ -129,14 +129,14 @@ def insert_movie_data(json):
     movie_id = json['id']
     logger.info('Insert Movie Data for Movie %d', movie_id)
     # Insert flat movie data into movies table
-    list_of_keys = ['id', 'budget', 'release_date', 'revenue', 'runtime', 'title']
+    list_of_keys = ['id', 'budget', 'release_date', 'revenue', 'runtime', 'title', 'imdb_id']
     row = [json.get(key) for key in list_of_keys]
     if json['belongs_to_collection'] is not None:
         row.append(json['belongs_to_collection']['name'])
     else:
         row.append(None)
     try:
-        db.execute('INSERT INTO movies VALUES (?, ?, ?, ?, ?, ?, ?)', row)
+        db.execute('INSERT INTO movies VALUES (?, ?, ?, ?, ?, ?, ?, ?)', row)
     except sql.InterfaceError:
         logger.warning('Unable to insert movie data row %r', row)
 
@@ -227,20 +227,20 @@ def get_movie_ids_from_person(person_id):
 # [M3 M6 M5 M7]
 # [P5 P9]
 # DB P1 P2 P3
+if __name__=='__main__':
+    create_tables()
 
-create_tables()
+    while True:
+        with suppress(Exception):
+            while len(unseen_movie_ids) > 0:
+                movie_id = unseen_movie_ids.pop()
+                get_movie_data(movie_id)
+                db.commit()
 
-while True:
-    with suppress(Exception):
-        while len(unseen_movie_ids) > 0:
-            movie_id = unseen_movie_ids.pop()
-            get_movie_data(movie_id)
-            db.commit()
-
-        while len(unseen_people_ids) > 0:
-            person_id = unseen_people_ids.pop()
-            get_movie_ids_from_person(person_id)
-            db.commit()
+            while len(unseen_people_ids) > 0:
+                person_id = unseen_people_ids.pop()
+                get_movie_ids_from_person(person_id)
+                db.commit()
 
 # Separate inserting data & queuing data
 # get movie = Get movie data > Insert to database > queue people IDs (similar for get people data)
