@@ -34,19 +34,19 @@ seen_people = set()
 
 
 # Open files and create sets from what's inside to pick up where we left off
-with open(r'..\..\..\Data Science Data\Unit 3\unseen_movies.txt','r') as f:
-    unseen_movie_ids = set(map(int,f.readlines()))
-if not unseen_movie_ids:
-    unseen_movie_ids.add(819)
-with open(r'..\..\..\Data Science Data\Unit 3\unseen_people.txt', 'r') as f:
-    unseen_people_ids = set(map(int, f.readlines()))
-
-# Open files so we can write in order to pick up where we leave off
-unseen_movie_file = open(r'..\..\..\Data Science Data\Unit 3\unseen_movies.txt','w')
-unseen_people_file = open(r'..\..\..\Data Science Data\Unit 3\unseen_people.txt','w')
-
-atexit.register(unseen_movie_file.close)
-atexit.register(unseen_people_file.close)
+# with open(r'..\..\..\Data Science Data\Unit 3\unseen_movies.txt','r') as f:
+#     unseen_movie_ids = set(map(int,f.readlines()))
+# if not unseen_movie_ids:
+#     unseen_movie_ids.add(819)
+# with open(r'..\..\..\Data Science Data\Unit 3\unseen_people.txt', 'r') as f:
+#     unseen_people_ids = set(map(int, f.readlines()))
+#
+# # Open files so we can write in order to pick up where we leave off
+# unseen_movie_file = open(r'..\..\..\Data Science Data\Unit 3\unseen_movies.txt','w')
+# unseen_people_file = open(r'..\..\..\Data Science Data\Unit 3\unseen_people.txt','w')
+#
+# atexit.register(unseen_movie_file.close)
+# atexit.register(unseen_people_file.close)
 
 db = sql.connect(r'..\..\..\Data Science Data\Unit 3\db.sqlite')
 atexit.register(db.close)

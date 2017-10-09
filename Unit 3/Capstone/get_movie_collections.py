@@ -2,7 +2,6 @@ import sqlite3 as sql
 from Crawler import insert_movie_data, insert_crew_data, check_if_movie_exists, db
 import requests
 import json
-import atexit
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -31,7 +30,9 @@ def get_movie_ids_from_collection(collection_id):
     return [item['id'] for item in resp['parts']]
 
 
-def create_cast_id_list(json):
+def create_cast_id_list(movie_id):
+    resp = requests.get(BASE_URL + f'movie/{movie_id}/credits', params=payload)
+    json = resp.json()
     cast = json.get('cast')
     return [person.get('id') for person in cast]
 
