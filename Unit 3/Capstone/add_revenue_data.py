@@ -1,7 +1,12 @@
 import sqlite3 as sql
 import atexit
+from contextlib import suppress
+import logging
 import bs4
 import requests
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 """
 1) Grab imdb_id for row in db if revenue is null
@@ -12,20 +17,50 @@ import requests
 
 db = sql.connect(r'..\..\..\Data Science Data\Unit 3\db.sqlite')
 atexit.register(db.close)
+# Make new columns in db
+
+def insert_db_columns():
+    db.execute('ALTER TABLE movies ADD COLUMN imdb_revenue, imdb_budget text')
 
 BASE_URL = 'http://imdb.com/title/'
 END_URL = '/business'
 
 def get_rev_bud(imdb_id):
+    logger.info('Get data for movie %s', imdb_id)
     resp = requests.get(BASE_URL + imdb_id + END_URL)
+    resp_text = resp.text
+    soup = BeautifulSoup(resp_text, 'lxml')
+    content = soup.find(id='tn15content')
 
+    if content is None:
+        logger.warning('imdb_id %s does not have a properly formatted page')
+        return None, None
+    budget = revenue = None
 
-def insert_data(revenue, budget, imdb_id):
+    next_is_budget = False
+    next_is_revenue = False
+    for item in content:
+        if next_is_budget:
+            budget = #cleaned string
+            next_is_budget = False
+        if getattr(item, 'text', '') == 'Budget':
+            next_is_budget = True
+        if next_is_revenue:
+            revenue = #cleaned string
+            next_is_revenue = False
+        if getattr(item, 'text', '') == 'Gross':
+            next_is_revenue = True
+    return budget, revenue
+
+def insert_data(imdb_id, budget, revenue):
+    logger.info('Inserting data for %s', imdb_id)
     db.execute('UPDATE movies SET revenue = ? AND budget = ? WHERE imdb_id = ?', (revenue, budget, imdb_id))
 
+with suppress(Exception):
+    insert_db_columns()
 
-for imdb_id in db.execute('SELECT imdb_id FROM movies WHERE revenue IS NULL AND revenue != "" AND revenue = 0'):
-    money_data = get_rev_bud(imdb_id)
-    insert_data(money_data)
+for imdb_id in db.execute('SELECT imdb_id FROM movies WHERE revenue IS NULL OR revenue = "" OR revenue = 0'):
+    budget, revenue = get_rev_bud(imdb_id)
+    insert_data(imdb_id, budget, revenue)
 
 
