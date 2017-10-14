@@ -2,7 +2,7 @@ import sqlite3 as sql
 import atexit
 from contextlib import suppress
 import logging
-import bs4
+from bs4 import BeautifulSoup
 import requests
 
 logging.basicConfig(level=logging.INFO)
@@ -20,7 +20,8 @@ atexit.register(db.close)
 # Make new columns in db
 
 def insert_db_columns():
-    db.execute('ALTER TABLE movies ADD COLUMN imdb_revenue, imdb_budget text')
+    db.execute('ALTER TABLE movies ADD COLUMN imdb_budget integer')
+    db.execute('ALTER TABLE movies ADD COLUMN imdb_revenue integer')
 
 BASE_URL = 'http://imdb.com/title/'
 END_URL = '/business'
@@ -41,12 +42,14 @@ def get_rev_bud(imdb_id):
     next_is_revenue = False
     for item in content:
         if next_is_budget:
-            budget = #cleaned string
+            budget_raw = item.split()[0]
+            budget = budget_raw.translate({ord(c): None for c in '$,'})
             next_is_budget = False
         if getattr(item, 'text', '') == 'Budget':
             next_is_budget = True
         if next_is_revenue:
-            revenue = #cleaned string
+            revenue_raw = item.split()[0]
+            revenue = revenue_raw.translate({ord(c): None for c in '$,'})
             next_is_revenue = False
         if getattr(item, 'text', '') == 'Gross':
             next_is_revenue = True
