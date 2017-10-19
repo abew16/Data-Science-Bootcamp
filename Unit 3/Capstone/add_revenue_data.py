@@ -72,7 +72,11 @@ with suppress(Exception):
 for imdb_id in db.execute('SELECT imdb_id FROM movies WHERE (revenue IS NULL OR revenue = "" OR revenue = 0) AND (imdb_revenue IS NULL)'):
     try:
         budget, revenue = get_rev_bud(imdb_id)
+        if budget is None:
+            budget = 0
+        if revenue is None:
+            revenue = 0
         insert_data(imdb_id, budget, revenue)
         db.commit()
     except TypeError:
-        logger.error('Error in main loop', exc_info=True)
+        pass
