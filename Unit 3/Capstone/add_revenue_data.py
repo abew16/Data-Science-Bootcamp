@@ -17,18 +17,23 @@ logger = logging.getLogger(__name__)
 
 db = sql.connect(r'..\..\..\Data Science Data\Unit 3\db.sqlite')
 atexit.register(db.close)
+
+
 # Make new columns in db
 
 def insert_db_columns():
     db.execute('ALTER TABLE movies ADD COLUMN imdb_budget integer')
     db.execute('ALTER TABLE movies ADD COLUMN imdb_revenue integer')
 
+
 BASE_URL = 'http://imdb.com/title/'
 END_URL = '/business'
 
+
 def get_rev_bud(imdb_id):
     logger.info('Get data for movie %s', imdb_id)
-    resp = requests.get(BASE_URL + imdb_id + END_URL)
+    resp = requests.get(BASE_URL + imdb_id[0] + END_URL)
+
     resp_text = resp.text
     soup = BeautifulSoup(resp_text, 'lxml')
     content = soup.find(id='tn15content')
@@ -55,15 +60,19 @@ def get_rev_bud(imdb_id):
             next_is_revenue = True
     return budget, revenue
 
+
 def insert_data(imdb_id, budget, revenue):
     logger.info('Inserting data for %s', imdb_id)
-    db.execute('UPDATE movies SET revenue = ? AND budget = ? WHERE imdb_id = ?', (revenue, budget, imdb_id))
+    db.execute('UPDATE movies SET imdb_revenue = ?, imdb_budget = ? WHERE imdb_id = ?', (revenue, budget, imdb_id[0]))
+
 
 with suppress(Exception):
     insert_db_columns()
 
-for imdb_id in db.execute('SELECT imdb_id FROM movies WHERE revenue IS NULL OR revenue = "" OR revenue = 0'):
-    budget, revenue = get_rev_bud(imdb_id)
-    insert_data(imdb_id, budget, revenue)
-
-
+for imdb_id in db.execute('SELECT imdb_id FROM movies WHERE (revenue IS NULL OR revenue = "" OR revenue = 0) AND (imdb_revenue IS NULL)'):
+    try:
+        budget, revenue = get_rev_bud(imdb_id)
+        insert_data(imdb_id, budget, revenue)
+        db.commit()
+    except TypeError:
+        logger.error('Error in main loop', exc_info=True)

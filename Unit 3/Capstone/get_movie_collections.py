@@ -100,3 +100,4 @@ for (movie_id,) in db.execute('SELECT movie_id FROM movies WHERE collection IS N
         cast_ids = create_cast_id_list(movie)
         for person in cast_ids:
             insert_cast_data(person)
+            db.commit()
